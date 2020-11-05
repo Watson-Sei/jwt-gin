@@ -8,6 +8,7 @@ import (
 
 func SetupRouter() *gin.Engine {
 	router := gin.Default()
+	router.LoadHTMLGlob("templates/*.html")
 	v1 := router.Group("/v1")
 	{
 		v1.GET("/api/signup", controllers.SignupGet)

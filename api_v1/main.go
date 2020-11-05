@@ -1,18 +1,18 @@
 package main
 
 import (
-	. "jwt-gin/api_v1/config"
-	. "jwt-gin/api_v1/models"
-	. "jwt-gin/api_v1/routes"
+	"jwt-gin/api_v1/config"
+	"jwt-gin/api_v1/models"
+	"jwt-gin/api_v1/routes"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main()  {
 	gin.SetMode(gin.DebugMode)
-	db := DbConnect()
+	db := config.DbConnect()
 	defer db.Close()
-	db.AutoMigrate(&UserModel{})
-	router := SetupRouter()
+	db.AutoMigrate(&models.UserModel{})
+	router := routes.SetupRouter()
 	router.Run(":8080")
 }

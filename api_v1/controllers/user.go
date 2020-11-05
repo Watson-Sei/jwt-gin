@@ -10,9 +10,7 @@ import (
 )
 
 func SignupGet(context *gin.Context)  {
-	context.HTML(http.StatusOK, "signup.html", gin.H{
-		"title":"Signup",
-	})
+	context.HTML(200, "signup.html", gin.H{})
 }
 
 // ユーザー登録
