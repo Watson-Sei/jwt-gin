@@ -13,8 +13,7 @@ func SignupGet(context *gin.Context)  {
 	context.HTML(200, "signup.html", gin.H{})
 }
 
-// ユーザー登録
-func SignupPost(context *gin.Context)  {
+func SignupPost(context *gin.Context) {
 	var user models.UserModel
 	if err := context.Bind(&user); err != nil {
 		context.HTML(http.StatusBadRequest, "signup.html", gin.H{"err":err})
@@ -22,20 +21,19 @@ func SignupPost(context *gin.Context)  {
 	} else {
 		username := context.PostForm("username")
 		password := context.PostForm("password")
-		if err := creaetUser(username, password); err != nil {
+		err := CreateUser(username, password)
+		if err != nil {
 			context.HTML(http.StatusBadRequest, "signup.html", gin.H{"err":err})
-			return
 		}
-		context.Redirect(302, "/")
+		context.Redirect(302,"/v1/api/signup")
 	}
 }
 
-// パスワードハッシュ関数で保存するまで
-func creaetUser(username, password string) []error {
-	passwordHash, _ := bcrypt.GenerateFromPassword([]byte(password), 12)
+func CreateUser(username, password string) (err error) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 12)
 	db := config.DbConnect()
 	defer db.Close()
-	if err := db.Create(&models.UserModel{Username: username, Password: string(passwordHash)}).GetErrors(); err != nil {
+	if err := db.Create(&models.UserModel{Username: username, Password: string(hash)}).Error; err != nil {
 		return err
 	}
 	return nil

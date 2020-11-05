@@ -1,10 +1,6 @@
 package models
 
 type UserModel struct {
-	Username	string	`gorm:"size:50;not null;" json:"username" form:"username" binding:"required"`
-	Password	string	`gorm:"not null;" json:"password" form:"password" binding:"password"`
-}
-
-func (b *UserModel) TableName() string {
-	return "usermodel"
+	Username		string		`form:"username" binding:"required" gorm:"unique;not null"`
+	Password		string		`form:"password" binding:"required" gorm:"not null"`
 }
