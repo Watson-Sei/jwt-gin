@@ -1,0 +1,4 @@
+.idea
+/docker/db/.env
+/docker/db/data
+/api_v1/tmp

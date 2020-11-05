@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  # Database
+  db:
+    image: library/mysql:latest
+    env_file:
+      - ./docker/db/.env
+    ports:
+      - 3306:3306
+    volumes:
+      - ./docker/db/data:/var/lib/mysql
+      - ./docker/db/my.cnf:/etc/mysql/conf.d/my.cnf
+    expose:
+      - 3306
+    security_opt:
+      - seccomp:unconfined
+
+  # Api
+  api:
+    env_file:
+      - ./docker/db/.env
+    build:
+      context: .
+      dockerfile: ./docker/api/Dockerfile
+    volumes:
+      - ./api_v1:/go/src/api
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+    tty: true
+    command: fresh
