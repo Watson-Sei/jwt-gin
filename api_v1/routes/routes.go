@@ -13,6 +13,12 @@ func SetupRouter() *gin.Engine {
 	{
 		v1.GET("/api/signup", controllers.SignupGet)
 		v1.POST("/api/signup", controllers.SignupPost)
+		v1.GET("/api/login", controllers.LoginGet)
+		v1.POST("/api/login", controllers.LoginPost)
+	}
+	private := router.Group("/private")
+	{
+		private.GET("/book", controllers.BookGet)
 	}
 	return router
 }
