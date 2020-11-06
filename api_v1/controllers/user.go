@@ -4,7 +4,9 @@ import (
 	"jwt-gin/api_v1/config"
 	"jwt-gin/api_v1/models"
 	"net/http"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -55,13 +57,34 @@ func LoginPost(context *gin.Context)  {
 	db.Find(&models.UserModel{}, "username =?", context.PostForm("username")).Scan(&user)
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(context.PostForm("password"))); err != nil {
 		context.HTML(http.StatusBadRequest, "signup.html", gin.H{"err":err})
-		return
+		context.Abort()
 	}
-	context.HTML(http.StatusOK, "login.html", gin.H{
-		"message": "パスワードが一致しました",
+	context.JSON(http.StatusOK, gin.H{
+		"token": CreateJWTToken(user.Username),
 	})
 }
 
+// jwt token 生成
+func CreateJWTToken(username string) string {
+	/*
+		アルゴリズムの指定
+	*/
+	// headerのセット
+	token := jwt.New(jwt.GetSigningMethod("HS256"))
+	// claimsのセット
+	claims := token.Claims.(jwt.MapClaims)
+	claims["username"] = username
+	claims["iat"] = time.Now()
+	claims["exp"] = time.Now().Add(time.Hour * 4).Unix()
+
+	// 電子署名
+	tokenString, err := token.SignedString([]byte(config.SECRETKEY))
+	if err == nil {
+		return tokenString
+	} else {
+		return "token生成に失敗しました。"
+	}
+}
 
 
 // プライベートデータ

@@ -13,6 +13,7 @@ import (
 var DB gorm.DB
 var count = 0
 var err error
+const SECRETKEY = "fm(hwfc2xc@h@_6v))5mabj5&=pif^x^$y4c_-x!zrnr1+gu+z"
 
 type DBConfig struct {
 	Host 		string

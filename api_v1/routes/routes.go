@@ -2,6 +2,7 @@ package routes
 
 import (
 	"jwt-gin/api_v1/controllers"
+	"jwt-gin/api_v1/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,7 @@ func SetupRouter() *gin.Engine {
 	}
 	private := router.Group("/private")
 	{
-		private.GET("/book", controllers.BookGet)
+		private.GET("/book", middleware.JWTChecker(), controllers.BookGet)
 	}
 	return router
 }
