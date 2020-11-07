@@ -11,28 +11,24 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// ユーザー登録関係
-func SignupGet(context *gin.Context)  {
-	context.HTML(200, "signup.html", gin.H{})
-}
-
+// ユーザー登録関数
+// request形式はbody json
 func SignupPost(context *gin.Context) {
 	var user models.UserModel
 	if err := context.Bind(&user); err != nil {
-		context.HTML(http.StatusBadRequest, "signup.html", gin.H{"err":err})
-		context.Abort()
+		context.JSON(http.StatusBadRequest, gin.H{"err":err})
+		return
 	} else {
-		username := context.PostForm("username")
-		password := context.PostForm("password")
-		err := CreateUser(username, password)
+		err := CreateUser(user.Username, user.Password)
 		if err != nil {
-			context.HTML(http.StatusBadRequest, "signup.html", gin.H{"err":err})
+			context.JSON(http.StatusBadRequest, gin.H{"err":err})
 			return
+		} else {
+			context.JSON(http.StatusOK, gin.H{"message":"signup success"})
 		}
-		context.Redirect(302,"/v1/api/signup")
 	}
 }
-
+// パスワードをハッシュ化、ユーザー情報を保存する関数
 func CreateUser(username, password string) (err error) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err := bcrypt.CompareHashAndPassword(hash, []byte(password)); err != nil {
@@ -46,22 +42,26 @@ func CreateUser(username, password string) (err error) {
 	return nil
 }
 
-// ログイン
-func LoginGet(context *gin.Context)  {
-	context.HTML(http.StatusOK, "login.html", gin.H{"message":"まだログインしていません"})
-}
+// ログイン関数
 // ログイン後にJWT Tokenを発行する
 func LoginPost(context *gin.Context)  {
-	db := config.DbConnect()
 	var user models.UserModel
-	db.Find(&models.UserModel{}, "username =?", context.PostForm("username")).Scan(&user)
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(context.PostForm("password"))); err != nil {
-		context.HTML(http.StatusBadRequest, "signup.html", gin.H{"err":err})
-		context.Abort()
+	if err := context.Bind(&user); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"err":err})
+		return
+	} else {
+		db := config.DbConnect()
+		loginUser := user.Username	// db query時に変数が入れ替わってしまうので、先に変数を定義しておきます。
+		loginPassword := user.Password
+		db.Find(&models.UserModel{}, "username =?", loginUser).Scan(&user)
+		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginPassword)); err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"err":err, "login":loginUser})
+			return
+		}
+		context.JSON(http.StatusOK, gin.H{
+			"token": CreateJWTToken(user.Username),
+		})
 	}
-	context.JSON(http.StatusOK, gin.H{
-		"token": CreateJWTToken(user.Username),
-	})
 }
 
 // jwt token 生成

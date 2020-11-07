@@ -12,9 +12,7 @@ func SetupRouter() *gin.Engine {
 	router.LoadHTMLGlob("templates/*.html")
 	v1 := router.Group("/v1")
 	{
-		v1.GET("/api/signup", controllers.SignupGet)
 		v1.POST("/api/signup", controllers.SignupPost)
-		v1.GET("/api/login", controllers.LoginGet)
 		v1.POST("/api/login", controllers.LoginPost)
 	}
 	private := router.Group("/private")

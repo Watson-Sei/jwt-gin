@@ -1,6 +1,6 @@
 package models
 
 type UserModel struct {
-	Username		string		`form:"username" binding:"required" gorm:"unique;not null"`
-	Password		string		`form:"password" binding:"required" gorm:"not null"`
+	Username		string		`json:"username" gorm:"not null" binding:"required"`
+	Password		string		`json:"password" gorm:"not null" binding:"required"`
 }
