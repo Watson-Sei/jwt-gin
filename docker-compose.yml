@@ -15,6 +15,18 @@ services:
     security_opt:
       - seccomp:unconfined
 
+  # Cache Database
+  redis:
+    depends_on:
+      - db
+    build:
+      context: .
+      dockerfile: ./docker/redis/Dockerfile
+    ports:
+      - 6379:6379
+    volumes:
+      - ./docker/redis/data:/data
+
   # Api
   api:
     env_file:

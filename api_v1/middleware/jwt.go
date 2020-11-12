@@ -1,12 +1,13 @@
 package middleware
 
 import (
-	"fmt"
 	"jwt-gin/api_v1/config"
+	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/gin-gonic/gin"
+	"github.com/gomodule/redigo/redis"
 )
 
 // jwt検証
@@ -18,12 +19,30 @@ func JWTChecker() gin.HandlerFunc {
 		})
 
 		if err == nil {
-			claims := token.Claims.(jwt.MapClaims)
-			msg := fmt.Sprintf("こんにちは、「%s」", claims["username"])
-			context.JSON(200, gin.H{"message": msg})
+			err := BlackListChecker(token.Raw)
+			if err == nil {
+				context.JSON(http.StatusBadRequest, gin.H{"err":"無効トークン"})
+				context.Abort()
+			} else {
+				claims := token.Claims.(jwt.MapClaims)
+				context.Set("exp", claims["exp"])
+				context.Set("token", token.Raw)
+				context.Next()
+			}
 		} else {
-			context.JSON(401, gin.H{"err": fmt.Sprint(err)})
+			context.JSON(http.StatusUnauthorized, gin.H{"err":err})
 			context.Abort()
 		}
 	}
+}
+
+// BlackListChecker
+func BlackListChecker(token string) error {
+	conn := config.RedisConnection()
+	defer conn.Close()
+	_, err := redis.String(conn.Do("GET", token))
+	if err != nil {
+		return err
+	}
+	return nil
 }

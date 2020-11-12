@@ -86,6 +86,50 @@ func CreateJWTToken(username string) string {
 	}
 }
 
+// Logout
+type UserJWT struct {
+	token	string	`json:"token" biding:"required"`
+}
+
+func LogoutPost(context *gin.Context)  {
+	var userJwt UserJWT
+	if err := context.Bind(&userJwt); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"err":err})
+		return
+	} else {
+		exp := context.MustGet("exp").(float64)
+		token := context.MustGet("token").(string)
+		err := BlackListSet(int64(exp), token)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"err":err})
+			context.Abort()
+		} else {
+			context.JSON(http.StatusOK, gin.H{"message":"Logout成功しました"})
+		}
+	}
+}
+
+// Redis JWT Token Black List Register
+func BlackListSet(exp int64, token string) error {
+	conn := config.RedisConnection()
+	defer conn.Close()
+
+	// 残り時間
+	nowTime := time.Now()
+	expTime := time.Unix(exp, 0)
+
+	// 残り時間秒数
+	timeLeft := expTime.Sub(nowTime).Seconds()
+
+	// Redis DBに追加
+	_, err := conn.Do("SET", token, string(exp))
+	_, err = conn.Do("EXPIRE", token, int64(timeLeft))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 
 // プライベートデータ
 
