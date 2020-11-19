@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"jwt-gin/api_v1/config"
-	"jwt-gin/api_v1/models"
+	"github.com/Watson-Sei/jwt-gin/api_v1/config"
+	"github.com/Watson-Sei/jwt-gin/api_v1/models"
 	"net/http"
 	"time"
 
@@ -58,14 +58,17 @@ func LoginPost(context *gin.Context)  {
 			context.JSON(http.StatusBadRequest, gin.H{"err":err, "login":loginUser})
 			return
 		}
-		context.JSON(http.StatusOK, gin.H{
-			"token": CreateJWTToken(user.Username),
-		})
+		tokens, err := CreateJWTToken(user.Username, user.ID)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"err": err})
+			context.Abort()
+		}
+		context.JSON(http.StatusOK, tokens)
 	}
 }
 
 // jwt token 生成
-func CreateJWTToken(username string) string {
+func CreateJWTToken(username string, userId uint) (map[string]string, error) {
 	/*
 		アルゴリズムの指定
 	*/
@@ -73,17 +76,29 @@ func CreateJWTToken(username string) string {
 	token := jwt.New(jwt.GetSigningMethod("HS256"))
 	// claimsのセット
 	claims := token.Claims.(jwt.MapClaims)
+	claims["sub"] = userId
 	claims["username"] = username
 	claims["iat"] = time.Now()
 	claims["exp"] = time.Now().Add(time.Hour * 4).Unix()
 
-	// 電子署名
-	tokenString, err := token.SignedString([]byte(config.SECRETKEY))
-	if err == nil {
-		return tokenString
-	} else {
-		return "token生成に失敗しました。"
+	t, err := token.SignedString([]byte(config.SECRETKEY))
+	if err != nil {
+		return nil, err
 	}
+
+	refreshToken := jwt.New(jwt.SigningMethodHS256)
+	rtClaims := refreshToken.Claims.(jwt.MapClaims)
+	rtClaims["sub"] = userId
+	rtClaims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	rt, err := refreshToken.SignedString([]byte(config.SECRETKEY))
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]string{
+		"access_token": t,
+		"refresh_token": rt,
+	}, nil
 }
 
 // Logout

@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"jwt-gin/api_v1/config"
+	"github.com/Watson-Sei/jwt-gin/api_v1/config"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"

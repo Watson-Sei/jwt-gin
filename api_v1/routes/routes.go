@@ -1,9 +1,8 @@
 package routes
 
 import (
-	"jwt-gin/api_v1/controllers"
-	"jwt-gin/api_v1/middleware"
-
+	"github.com/Watson-Sei/jwt-gin/api_v1/controllers"
+	"github.com/Watson-Sei/jwt-gin/api_v1/middleware"
 	"github.com/gin-gonic/gin"
 )
 

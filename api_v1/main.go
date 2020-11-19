@@ -1,9 +1,9 @@
 package main
 
 import (
-	"jwt-gin/api_v1/config"
-	"jwt-gin/api_v1/models"
-	"jwt-gin/api_v1/routes"
+	"github.com/Watson-Sei/jwt-gin/api_v1/config"
+	"github.com/Watson-Sei/jwt-gin/api_v1/models"
+	"github.com/Watson-Sei/jwt-gin/api_v1/routes"
 
 	"github.com/gin-gonic/gin"
 )
