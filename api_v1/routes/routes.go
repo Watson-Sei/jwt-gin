@@ -12,7 +12,8 @@ func SetupRouter() *gin.Engine {
 	{
 		v1.POST("/api/signup", controllers.SignupPost)
 		v1.POST("/api/login", controllers.LoginPost)
-		v1.POST("/api/logout", middleware.JWTChecker(), controllers.LogoutPost)
+		v1.GET("/api/logout", middleware.JWTChecker(), controllers.LogoutGET)
+		v1.GET("/api/refresh", middleware.RefreshChecker(), controllers.RefreshGET)
 	}
 	private := router.Group("/private")
 	{

@@ -76,21 +76,23 @@ func CreateJWTToken(username string, userId uint) (map[string]string, error) {
 	token := jwt.New(jwt.GetSigningMethod("HS256"))
 	// claimsのセット
 	claims := token.Claims.(jwt.MapClaims)
-	claims["sub"] = userId
+	claims["sub"] = "AccessToken"
+	claims["userId"] = userId
 	claims["username"] = username
 	claims["iat"] = time.Now()
 	claims["exp"] = time.Now().Add(time.Hour * 4).Unix()
 
-	t, err := token.SignedString([]byte(config.SECRETKEY))
+	t, err := token.SignedString([]byte(config.ACCESS_TOKEN_SECRETKEY))
 	if err != nil {
 		return nil, err
 	}
 
 	refreshToken := jwt.New(jwt.SigningMethodHS256)
 	rtClaims := refreshToken.Claims.(jwt.MapClaims)
-	rtClaims["sub"] = userId
+	rtClaims["sub"] = "RefreshToken"
+	rtClaims["userId"] = userId
 	rtClaims["exp"] = time.Now().Add(time.Hour * 24).Unix()
-	rt, err := refreshToken.SignedString([]byte(config.SECRETKEY))
+	rt, err := refreshToken.SignedString([]byte(config.REFRESH_TOKEN_SECRET_KEY))
 	if err != nil {
 		return nil, err
 	}
@@ -102,30 +104,20 @@ func CreateJWTToken(username string, userId uint) (map[string]string, error) {
 }
 
 // Logout
-type UserJWT struct {
-	token	string	`json:"token" biding:"required"`
-}
-
-func LogoutPost(context *gin.Context)  {
-	var userJwt UserJWT
-	if err := context.Bind(&userJwt); err != nil {
+func LogoutGET(context *gin.Context)  {
+	exp := context.MustGet("exp").(float64)
+	token := context.MustGet("token").(string)
+	err := BlackListSet(int64(exp), token)
+	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"err":err})
-		return
+		context.Abort()
 	} else {
-		exp := context.MustGet("exp").(float64)
-		token := context.MustGet("token").(string)
-		err := BlackListSet(int64(exp), token)
-		if err != nil {
-			context.JSON(http.StatusBadRequest, gin.H{"err":err})
-			context.Abort()
-		} else {
-			context.JSON(http.StatusOK, gin.H{"message":"Logout成功しました"})
-		}
+		context.JSON(http.StatusOK, gin.H{"message":"Logout成功しました"})
 	}
 }
 
 // Redis JWT Token Black List Register
-func BlackListSet(exp int64, token string) error {
+func BlackListSet(exp int64, accessToken string) error {
 	conn := config.RedisConnection()
 	defer conn.Close()
 
@@ -137,12 +129,38 @@ func BlackListSet(exp int64, token string) error {
 	timeLeft := expTime.Sub(nowTime).Seconds()
 
 	// Redis DBに追加
-	_, err := conn.Do("SET", token, string(exp))
-	_, err = conn.Do("EXPIRE", token, int64(timeLeft))
+	_, err := conn.Do("SET", accessToken, string(exp))
+	_, err = conn.Do("EXPIRE", accessToken, int64(timeLeft))
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// Refresh
+func RefreshGET(context *gin.Context)  {
+	var user models.UserModel
+	userId := context.MustGet("userId").(float64)
+	db := config.DbConnect()
+	defer db.Close()
+	db.First(&user, uint(userId)).Scan(&user)
+	// 新しいトークンを生成します
+	tokens, err := CreateJWTToken(user.Username,uint(userId))
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"err":err})
+		return
+	} else {
+		// リフレッシュトークンをブラックリストに保存します。
+		exp := context.MustGet("exp").(float64)
+		token := context.MustGet("token").(string)
+		err := BlackListSet(int64(exp), token)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{"err":err})
+			context.Abort()
+		} else {
+			context.JSON(http.StatusOK, tokens)
+		}
+	}
 }
 
 
